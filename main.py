@@ -1,5 +1,5 @@
 import ollama
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
 
@@ -28,6 +28,10 @@ async def generate_response(model: str, prompt: str) -> str:
         return response_text
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating response: {e}")
+
+@app.post("/file/")
+async def upload_file(file: UploadFile = File(...)):
+  return {"filename": file.filename}
 
 @app.post("/generate")
 async def generate_text(request: PromptRequest):
