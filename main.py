@@ -2,6 +2,9 @@ import ollama
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from typing import List
+from langchain_community.document_loaders import PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+import tempfile
 
 app = FastAPI()
 
@@ -9,6 +12,7 @@ app = FastAPI()
 class PromptRequest(BaseModel):
     model: str = "llama3.2:1b"
     prompt: str
+    file: bytes
 
 # Helper function to interact with ollama
 async def generate_response(model: str, prompt: str) -> str:
@@ -29,9 +33,32 @@ async def generate_response(model: str, prompt: str) -> str:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating response: {e}")
 
+def process_pdf(pdf_path):
+    """Process the PDF, split it into chunks, and return the chunks."""
+    loader = PyPDFLoader(pdf_path)
+    pages = loader.load()
+    document_text = "".join([page.page_content for page in pages])
+
+    # Split the document into chunks
+    text_splitter = RecursiveCharacterTextSplitter(
+        chunk_size=300,  # Adjust as needed
+        chunk_overlap=40  # Adjust as needed
+    )
+    chunks = text_splitter.create_documents([document_text])
+
+    return chunks
+
 @app.post("/file/")
 async def upload_file(file: UploadFile = File(...)):
-  return {"filename": file.filename}
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
+        temp_file.write(file.file.read())
+        temp_file_path = temp_file.name
+    
+    document_chunks = process_pdf(temp_file_path)
+    print(document_chunks)
+    
+    response = await generate_text(PromptRequest(prompt="What is life in 1 word"))
+    return {"filename": file.filename, "response": response["generated_text"]}
 
 @app.post("/generate")
 async def generate_text(request: PromptRequest):
