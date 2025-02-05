@@ -56,7 +56,7 @@ async def upload_file(file: UploadFile = File(...)):
     
     document_chunks = process_pdf(temp_file_path)
     
-    response = await generate_text(PromptRequest(prompt="Find the total net sales in this financial statement" + document_chunks[0].page_content))
+    response = await generate_text(PromptRequest(prompt="Find the total net sales in this financial statement, do not respond with anything other than the number:" + document_chunks[0].page_content))
     return {"filename": file.filename, "response": response["generated_text"]}
 
 @app.post("/generate")
