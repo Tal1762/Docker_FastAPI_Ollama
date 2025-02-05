@@ -12,7 +12,7 @@ app = FastAPI()
 class PromptRequest(BaseModel):
     model: str = "llama3.2:1b"
     prompt: str
-    file: bytes
+    file: bytes = ""
 
 # Helper function to interact with ollama
 async def generate_response(model: str, prompt: str) -> str:
@@ -38,7 +38,7 @@ def process_pdf(pdf_path):
     loader = PyPDFLoader(pdf_path)
     pages = loader.load()
     document_text = "".join([page.page_content for page in pages])
-
+    print([page.page_content for page in pages])
     # Split the document into chunks
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=300,  # Adjust as needed
@@ -55,9 +55,8 @@ async def upload_file(file: UploadFile = File(...)):
         temp_file_path = temp_file.name
     
     document_chunks = process_pdf(temp_file_path)
-    print(document_chunks)
     
-    response = await generate_text(PromptRequest(prompt="What is life in 1 word"))
+    response = await generate_text(PromptRequest(prompt="Find the total net sales in this financial statement" + document_chunks[0].page_content))
     return {"filename": file.filename, "response": response["generated_text"]}
 
 @app.post("/generate")
