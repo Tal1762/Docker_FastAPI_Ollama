@@ -55,7 +55,7 @@ async def upload_file(file: UploadFile = File(...)):
         temp_file_path = temp_file.name
     
     document_chunks = process_pdf(temp_file_path)
-    
+    print(type(file.file.read()))
     response = await generate_text(PromptRequest(prompt="Find the total net sales in this financial statement, do not respond with anything other than the number:" + document_chunks[0].page_content))
     return {"filename": file.filename, "response": response["generated_text"]}
 
@@ -68,3 +68,46 @@ async def generate_text(request: PromptRequest):
     response = await generate_response(model, prompt)
 
     return {"generated_text": response}
+
+"""
+import torch
+import io
+from PIL import Image as PIL_Image
+from transformers import MllamaForConditionalGeneration, AutoProcessor, MllamaProcessor, file_utils, AutoModelForVision2Seq
+from pdf2image import convert_from_path
+import base64
+import os
+
+model_id = "HuggingFaceTB/SmolVLM-Instruct"
+
+model = AutoModelForVision2Seq.from_pretrained(model_id, device_map="cuda", torch_dtype=torch.bfloat16, cache_dir=r'D:\Software\llama3cache')
+processor = AutoProcessor.from_pretrained(model_id, cache_dir=r'D:\Software\llama3cache')
+
+pdf_file = r"statement.pdf"
+pil_image_lst = convert_from_path(pdf_file) # This returns a list even for a 1 page pdf
+pil_image = pil_image_lst[0]
+
+conversation = [
+    {
+    "role": "user",
+    "content": [
+        {"type": "image", "image": pil_image},
+        {"type": "text", "text": "Describe this image in two sentences of 30 words or less"},
+        ],
+    },
+]
+print(torch.version.cuda)
+display(pil_image)
+if torch.cuda.is_available():
+    print("GPU is available. The model will use the GPU.")
+else:
+    print("GPU is not available. The model will use the CPU.")
+
+prompt = processor.apply_chat_template(conversation, add_generation_prompt=True,tokenize=False)
+print("prompt loaded yessir")
+inputs = processor(text = prompt, images = pil_image, return_tensors="pt").to(model.device)
+print("we getting there")
+output = model.generate(**inputs, temperature=0.7, top_p=0.9, max_new_tokens=512, early_stopping=True)
+print("we got output boys")
+print("text&image_output: ",processor.decode(output[0])[len(prompt):])
+"""
