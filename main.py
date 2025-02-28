@@ -88,9 +88,6 @@ from transformers import MllamaForConditionalGeneration, AutoProcessor, MllamaPr
 from pdf2image import convert_from_path
 import base64
 import os
-import replicate
-
-os.environ['REPLICATE_API_TOKEN'] = "r8_8Q74pvqI5saxf4Rmz1UoLo6OwxuPwDx3yqK7A"
 
 def ask_ai(file: UploadFile=File(...)):
     model_id = 'HuggingFaceTB/SmolVLM-Instruct'
@@ -144,15 +141,7 @@ def process_pdf(pdf_path):
 
 @app.post('/ai/')
 async def ask_question(file: UploadFile=File(...)):
-  output = replicate.run(
-    "lucataco/smolvlm-instruct:e79f1e0eb64fe9a145d0a0afd6127d43b37de66eaaa2e00ff3d165bc14097dfb",
-    input={
-        "image": "https://replicate.delivery/pbxt/M41uQ4M8J9FEqxRJ0tNnliJF2PNJIeGjdid66k2uHOLgv5OJ/weather.png",
-        "prompt": "Where do the severe droughts happen according to this image?",
-        "max_new_tokens": 500
-    }
-  )
-  return {'response': output}
+  return {'response': ask_ai(file)}
 
 @app.post('/file/')
 async def upload_file(file: UploadFile=File(...)):
