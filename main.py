@@ -21,7 +21,7 @@ def ask_ai(file: UploadFile=File(...)):
         temp_file_path = temp_file.name
         pil_image_lst = convert_from_path(temp_file_path)
     pil_image = pil_image_lst[0]
-    conversation = [{'role': 'user', 'content': [{'type': 'image', 'image': pil_image}, {'type': 'text', 'text': 'State the total net sales for 2024'}]}]
+    conversation = [{'role': 'user', 'content': [{'type': 'image', 'image': pil_image}, {'type': 'text', 'text':  'State the following metrics from the financial statement for the most recent year available in the financial statement. DO NOT use metrics from any year earlier than the most recent one. Format your response by placing the numbers after their respective labels given here: {total net sales: , net income: , total assets: }. Convert the metrics you find in the financial statement to millions of dollars if they are not already in millions of dollars. Do not put dollar symbols before the metrics and do not use any commas in the metrics. Put the words NOT FOUND if a metric is not in the financial statement.'}]}]
     print(torch.version.cuda)
     if torch.cuda.is_available():
         print('GPU is available. The model will use the GPU.')
@@ -34,7 +34,7 @@ def ask_ai(file: UploadFile=File(...)):
     output = model.generate(**inputs, temperature=0.7, top_p=0.9, max_new_tokens=25, do_sample=True)
     print('we got output boys')
     processor_output = processor.decode(output[0])[len(prompt):]
-    output = processor_output[processor_output.rfind("Assistant: ")+1:processor_output.rfind("<end_of_utterance>")]
+    output = processor_output[processor_output.rfind("Assistant: ")+11:processor_output.rfind("<end_of_utterance>")]
     return output
   
 app = FastAPI()
