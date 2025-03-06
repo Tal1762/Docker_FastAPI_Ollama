@@ -12,6 +12,9 @@ from pdf2image import convert_from_path
 import base64
 import os
 
+def image_component(pil_image):
+    return {'type': 'image', 'image': pil_image}
+
 def ask_ai(file: UploadFile=File(...)):
     model_id = 'HuggingFaceTB/SmolVLM-Instruct'
     model = AutoModelForVision2Seq.from_pretrained(model_id, torch_dtype=torch.bfloat16)
@@ -20,8 +23,9 @@ def ask_ai(file: UploadFile=File(...)):
         temp_file.write(file.file.read())
         temp_file_path = temp_file.name
         pil_image_lst = convert_from_path(temp_file_path)
-    pil_image = pil_image_lst[0]
-    conversation = [{'role': 'user', 'content': [{'type': 'image', 'image': pil_image}, {'type': 'text', 'text':  'State the following metrics from the financial statement for the most recent year available in the financial statement. DO NOT use metrics from any year earlier than the most recent one. Format your response by placing the numbers after their respective labels given here: {total net sales: , net income: , total assets: }. Convert the metrics you find in the financial statement to millions of dollars if they are not already in millions of dollars. Do not put dollar symbols before the metrics and do not use any commas in the metrics. Put the words NOT FOUND if a metric is not in the financial statement.'}]}]
+    conversation = [{'role': 'user', 'content': [{'type': 'text', 'text':  'State the following metrics from the financial statement for the most recent year available in the financial statement. DO NOT use metrics from any year earlier than the most recent one. Format your response by placing the numbers after their respective labels given here: {total net sales: , net income: , total assets: }. Convert the metrics you find in the financial statement to millions of dollars if they are not already in millions of dollars. Do not put dollar symbols before the metrics and do not use any commas in the metrics. Put the words NOT FOUND if a metric is not in the financial statement.'}]}]
+    for i in range(0, len(pil_image_lst)):
+        conversation[0]['content'].insert(0, image_component(pil_image_lst[i]))
     print(torch.version.cuda)
     if torch.cuda.is_available():
         print('GPU is available. The model will use the GPU.')
@@ -29,7 +33,7 @@ def ask_ai(file: UploadFile=File(...)):
         print('GPU is not available. The model will use the CPU.')
     prompt = processor.apply_chat_template(conversation, add_generation_prompt=True, tokenize=False)
     print('prompt loaded yessir')
-    inputs = processor(text=prompt, images=pil_image, return_tensors='pt').to(model.device)
+    inputs = processor(text=prompt, images=pil_image_lst, return_tensors='pt').to(model.device)
     print('we getting there')
     output = model.generate(**inputs, temperature=0.7, top_p=0.9, max_new_tokens=25, do_sample=True)
     print('we got output boys')
