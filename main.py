@@ -43,6 +43,10 @@ def ask_ai(file: UploadFile=File(...)):
   
 app = FastAPI()
 
+async def do_rag(file: UploadFile=File(...)):
+    os.environ["HF_TOKEN"] = "userdata.get('HF_TOKEN')"
+    os.environ["ANTHROPIC_API_KEY"] = "userdata.get('ANTHROPIC_API_KEY')"
+
 class PromptRequest(BaseModel):
     model: str = 'llama3.2:1b'
     prompt: str
@@ -66,6 +70,10 @@ def process_pdf(pdf_path):
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=40)
     chunks = text_splitter.create_documents([document_text])
     return chunks
+
+@app.post('/rag/')
+async def rag(file: UploadFile=File(...)):
+  return {'response': do_rag(file)}
 
 @app.post('/ai/')
 async def ask_question(file: UploadFile=File(...)):
